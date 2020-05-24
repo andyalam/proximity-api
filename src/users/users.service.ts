@@ -4,6 +4,7 @@ import { Connection, getRepository, Repository } from 'typeorm';
 import { RegisterDto } from 'src/auth/dto/register.dto';
 import { UserEntity } from 'src/users/user.entity';
 import { validate } from 'class-validator';
+import { InjectRepository } from '@nestjs/typeorm';
 
 export type User = any;
 
@@ -17,7 +18,10 @@ export interface UserJSON {
 export class UsersService {
   private readonly users: User[];
 
-  constructor(private readonly userRepository: Repository<UserEntity>) {
+  constructor(
+    @InjectRepository(UserEntity)
+    private usersRepository: Repository<UserEntity>
+  ) {
     this.users = [
       {
         userId: 1,
@@ -70,7 +74,7 @@ export class UsersService {
     if (errors.length > 0) {
     }
 
-    const savedUser = await this.userRepository.save(newUser);
+    const savedUser = await this.usersRepository.save(newUser);
     return this.userJSON(savedUser);
   }
 
