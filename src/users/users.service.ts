@@ -1,5 +1,5 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { getRepository, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { RegisterDto } from 'src/auth/dto/register.dto';
 import { UserEntity } from 'src/users/user.entity';
@@ -16,30 +16,10 @@ export interface UserJSON {
 
 @Injectable()
 export class UsersService {
-  private readonly users: User[];
-
   constructor(
     @InjectRepository(UserEntity)
     private usersRepository: Repository<UserEntity>
-  ) {
-    this.users = [
-      {
-        userId: 1,
-        username: 'john',
-        password: 'changeme'
-      },
-      {
-        userId: 2,
-        username: 'chris',
-        password: 'secret'
-      },
-      {
-        userId: 3,
-        username: 'maria',
-        password: 'guess'
-      }
-    ];
-  }
+  ) {}
 
   async findOne(params: {
     username?: string;
@@ -57,7 +37,7 @@ export class UsersService {
       );
     }
 
-    let qb = await getRepository(UserEntity).createQueryBuilder('user');
+    let qb = await this.usersRepository.createQueryBuilder('user');
     qb = username
       ? qb.where('username = :username', { username })
       : qb.where('email = :email', { email });
@@ -79,7 +59,7 @@ export class UsersService {
   async createUser(registerDto: RegisterDto): Promise<UserJSON> {
     const { username, email, password } = registerDto;
 
-    const qb = await getRepository(UserEntity)
+    const qb = await this.usersRepository
       .createQueryBuilder('user')
       .where('username = :username', { username })
       .orWhere('email = :email', { email });
