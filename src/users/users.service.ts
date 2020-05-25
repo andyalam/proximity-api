@@ -1,5 +1,5 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
-import { Connection, getRepository, Repository } from 'typeorm';
+import { getRepository, Repository } from 'typeorm';
 
 import { RegisterDto } from 'src/auth/dto/register.dto';
 import { UserEntity } from 'src/users/user.entity';
@@ -41,17 +41,48 @@ export class UsersService {
     ];
   }
 
-  async findOne(username: string): Promise<User | undefined> {
-    return this.users.find(u => u.username === username);
+  async findOne(params: {
+    username?: string;
+    email?: string;
+  }): Promise<UserEntity> {
+    const { username, email } = params;
+
+    if (!username && !email) {
+      throw new HttpException(
+        {
+          message: 'Input data validation failed',
+          errors: { usernameOrEmail: 'Username or email must be provided' }
+        },
+        HttpStatus.BAD_REQUEST
+      );
+    }
+
+    let qb = await getRepository(UserEntity).createQueryBuilder('user');
+    qb = username
+      ? qb.where('username = :username', { username })
+      : qb.where('email = :email', { email });
+
+    const user = await qb.getOne();
+
+    if (!user) {
+      throw new HttpException(
+        {
+          message: 'User not found'
+        },
+        HttpStatus.NOT_FOUND
+      );
+    }
+
+    return user;
   }
 
-  async createUser(registerDto: RegisterDto) {
+  async createUser(registerDto: RegisterDto): Promise<UserJSON> {
     const { username, email, password } = registerDto;
 
     const qb = await getRepository(UserEntity)
       .createQueryBuilder('user')
-      .where('user.username = :username', { username })
-      .orWhere('user.email = :email', { email });
+      .where('username = :username', { username })
+      .orWhere('email = :email', { email });
 
     const user = await qb.getOne();
 
